@@ -1,39 +1,90 @@
-import React, { useState } from 'react';
-import Sidebar from './components/Sidebar';
-import Header from './components/Header';
-import TaskList from './components/TaskList';
-import StatsCard from './components/StatsCard';
-import DailyInsight from './components/DailyInsight';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import useAuthStore from './store/useAuthStore';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Profile from './pages/Profile';
+import Signup from './pages/Signup';
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { session, isLoading } = useAuthStore();
+  
+  if (isLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// Public Route Component (redirects to dashboard if already logged in)
+const PublicRoute = ({ children }) => {
+  const { session, isLoading } = useAuthStore();
+  
+  if (isLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (session) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const initializeAuth = useAuthStore((state) => state.initialize);
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  useEffect(() => {
+    const unsubscribe = initializeAuth();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [initializeAuth]);
 
   return (
-    <div className="bg-background min-h-screen text-on-surface font-body-md">
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-      
-      {/* 
-        Responsive fix: Changed ml-64 to lg:ml-64 so the content 
-        doesn't have a huge left margin on mobile screens.
-      */}
-      <main className="lg:ml-64 p-xl max-w-[1200px] transition-all duration-300">
-        <Header toggleSidebar={toggleSidebar} />
-        
-        {/* Bento Layout / Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg">
-          {/* Main Tasks Card */}
-          <TaskList />
-          
-          {/* Stats/Secondary Column */}
-          <div className="lg:col-span-4 flex flex-col gap-lg">
-            <StatsCard />
-            <DailyInsight />
-          </div>
-        </div>
-      </main>
-    </div>
+    <Router>
+      <div className="bg-background min-h-screen text-on-surface font-body-md">
+        <Routes>
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/signup" 
+            element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

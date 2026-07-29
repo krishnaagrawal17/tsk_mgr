@@ -4,9 +4,8 @@ import useTaskStore from '../store/useTaskStore';
 const StatsCard = () => {
   const tasks = useTaskStore((state) => state.tasks);
   const total = tasks.length;
-  const completed = tasks.filter(task => task.completed).length;
-  // If no tasks, we can say 0% or 100% depending on semantics. Let's say 100% if empty, or just 0%.
-  // In the original, it was hardcoded to 84%. I'll calculate it, but if 0 tasks, 0%.
+  const completed = tasks.filter(task => task.status === 'done').length;
+  
   const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return (
